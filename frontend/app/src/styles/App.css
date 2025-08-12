@@ -1,0 +1,16 @@
+/* Reset and full-width layout for professional appearance */
+#root {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background-color: #f8fafc;
+}
+
+/* Remove any default spacing from the App component */
+.app-container {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}

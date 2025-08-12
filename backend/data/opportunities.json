@@ -1,0 +1,146 @@
+[
+  {
+    "id": 1,
+    "title": "AI/ML Strategy Advisor Needed",
+    "companyName": "TechFlow AI",
+    "companyId": 5,
+    "description": "Looking for an experienced advisor to help with AI/ML product strategy and go-to-market approach. We're building next-gen AI tools for enterprise customers.",
+    "requiredExpertise": [
+      "AI/ML",
+      "Product Strategy",
+      "Go-to-Market"
+    ],
+    "timeCommitment": "1-5 hours/month",
+    "compensation": "0.5% equity vesting over 2 years",
+    "status": "open",
+    "createdAt": "2025-07-22T10:30:00Z",
+    "updatedAt": "2025-08-01T22:23:51.935Z",
+    "viewCount": 13,
+    "applicantCount": 2,
+    "priority": "high"
+  },
+  {
+    "id": 2,
+    "title": "FinTech Regulatory Compliance Expert",
+    "companyName": "InnovateTech Solutions",
+    "companyId": 3,
+    "description": "Seeking advisor with deep FinTech regulatory knowledge for Series A preparation. Need guidance on compliance frameworks and regulatory strategy.",
+    "requiredExpertise": [
+      "FinTech",
+      "Regulatory Compliance",
+      "Series A"
+    ],
+    "timeCommitment": "5-10 hours/month",
+    "compensation": "$3,000/month cash + 0.25% equity",
+    "status": "open",
+    "createdAt": "2025-07-20T14:20:00Z",
+    "updatedAt": "2025-08-01T22:30:40.096Z",
+    "viewCount": 27,
+    "applicantCount": 1,
+    "priority": "high"
+  },
+  {
+    "id": 3,
+    "title": "B2B SaaS Sales Strategy",
+    "companyName": "DataSync Pro",
+    "companyId": 7,
+    "description": "Need guidance on enterprise sales processes and customer acquisition. Looking to scale from $2M to $10M ARR.",
+    "requiredExpertise": [
+      "B2B SaaS",
+      "Enterprise Sales",
+      "Customer Acquisition"
+    ],
+    "timeCommitment": "5-10 hours/month",
+    "compensation": "0.3% equity vesting over 18 months",
+    "status": "open",
+    "createdAt": "2025-07-18T09:15:00Z",
+    "updatedAt": "2025-08-01T20:03:04.753Z",
+    "viewCount": 18,
+    "applicantCount": 1,
+    "priority": "medium"
+  },
+  {
+    "id": 4,
+    "title": "Sustainability Tech Advisor",
+    "companyName": "DataSync Pro",
+    "companyId": 7,
+    "description": "Looking for advisor with experience in sustainability and clean tech markets. Focus on ESG compliance and impact measurement.",
+    "requiredExpertise": [
+      "Sustainability",
+      "Clean Tech",
+      "ESG",
+      "Impact Measurement"
+    ],
+    "timeCommitment": "1-5 hours/month",
+    "compensation": "0.2% equity + advisory role in board observer capacity",
+    "status": "closed",
+    "createdAt": "2025-07-15T16:30:00Z",
+    "updatedAt": "2025-07-20T11:45:00Z",
+    "viewCount": 8,
+    "applicantCount": 1,
+    "priority": "low"
+  },
+  {
+    "id": 5,
+    "title": "Healthcare Technology Advisor",
+    "companyName": "TechFlow AI",
+    "companyId": 5,
+    "description": "Seeking LP advisor with healthcare technology and FDA regulatory experience. Building AI-powered diagnostic tools.",
+    "requiredExpertise": [
+      "Healthcare",
+      "FDA Regulatory",
+      "MedTech",
+      "AI"
+    ],
+    "timeCommitment": "5-10 hours/month",
+    "compensation": "$2,500/month cash + 0.15% equity",
+    "status": "open",
+    "createdAt": "2025-07-19T13:22:00Z",
+    "updatedAt": "2025-07-19T13:22:00Z",
+    "viewCount": 5,
+    "applicantCount": 0,
+    "priority": "high"
+  },
+  {
+    "id": 6,
+    "title": "Product Strategy Advisory",
+    "description": "Looking for experienced product strategist to help with product-market fit and scaling strategies",
+    "requiredExpertise": [
+      "Product Strategy",
+      "Fintech",
+      "AI/ML"
+    ],
+    "timeCommitment": "10-15 hours/month",
+    "compensation": "$1000/month",
+    "companyId": 3,
+    "companyName": "InnovateTech Solutions",
+    "status": "open",
+    "viewCount": 3,
+    "applicantCount": 1,
+    "priority": "medium",
+    "createdAt": "2025-07-31T20:57:16.120Z",
+    "updatedAt": "2025-08-01T22:30:31.948Z"
+  },
+  {
+    "id": 7,
+    "title": "Example",
+    "description": "Example Opportunity",
+    "requiredExpertise": [
+      "AI/ML",
+      "Marketing",
+      "Cybersecurity"
+    ],
+    "timeCommitment": "5-10 hours/month",
+    "compensation": "$1000/month",
+    "companyId": 3,
+    "companyName": "InnovateTech Solutions",
+    "status": "open",
+    "viewCount": 4,
+    "applicantCount": 1,
+    "applications": 0,
+    "matchedLPs": [],
+    "priority": "medium",
+    "createdAt": "2025-08-01T22:44:45.130Z",
+    "updatedAt": "2025-08-12T01:11:58.211Z"
+  }
+]

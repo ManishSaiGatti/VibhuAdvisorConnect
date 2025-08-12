@@ -1,0 +1,48 @@
+[
+  {
+    "id": 1,
+    "lpId": 2,
+    "companyId": 3,
+    "opportunityId": 2,
+    "status": "active",
+    "startDate": "2025-07-01",
+    "meetingFrequency": "bi-weekly",
+    "lastMeeting": "2025-07-25",
+    "nextMeeting": "2025-08-08",
+    "totalMeetings": 4,
+    "notes": "Great progress on regulatory framework. Next: Series A prep.",
+    "createdAt": "2025-07-01T10:00:00Z",
+    "updatedAt": "2025-07-25T15:30:00Z"
+  },
+  {
+    "id": 2,
+    "lpId": 6,
+    "companyId": 7,
+    "opportunityId": 4,
+    "status": "completed",
+    "startDate": "2025-06-15",
+    "endDate": "2025-07-20",
+    "meetingFrequency": "weekly",
+    "lastMeeting": "2025-07-20",
+    "nextMeeting": null,
+    "totalMeetings": 6,
+    "notes": "Successfully completed ESG framework implementation. Company secured green certification.",
+    "createdAt": "2025-06-15T09:00:00Z",
+    "updatedAt": "2025-07-20T16:45:00Z"
+  },
+  {
+    "id": 3,
+    "lpId": 4,
+    "companyId": 5,
+    "opportunityId": 1,
+    "status": "active",
+    "startDate": "2025-07-10",
+    "meetingFrequency": "monthly",
+    "lastMeeting": "2025-07-10",
+    "nextMeeting": "2025-08-10",
+    "totalMeetings": 1,
+    "notes": "Initial advisory session completed. Focus on product-market fit.",
+    "createdAt": "2025-07-10T14:00:00Z",
+    "updatedAt": "2025-07-10T16:00:00Z"
+  }
+]
