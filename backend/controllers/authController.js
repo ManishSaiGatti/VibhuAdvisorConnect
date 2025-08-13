@@ -1,26 +1,85 @@
+/**
+ * AuthController - Authentication and Authorization Management
+ * 
+ * This controller handles user authentication, JWT token generation, and provides
+ * role-specific dashboard data for the VibhuAdvisorConnect platform.
+ * 
+ * Key Responsibilities:
+ * - User login and JWT token generation
+ * - Role-based dashboard data aggregation
+ * - Session management and authentication verification
+ * 
+ * Authentication Flow:
+ * 1. User submits email/password via login endpoint
+ * 2. Credentials validated against user database
+ * 3. JWT token generated with user info and role
+ * 4. Frontend stores token and uses for subsequent API calls
+ * 5. Role-specific dashboards provide customized data views
+ * 
+ * Security Features:
+ * - Password validation (note: consider hashing in production)
+ * - JWT token with expiration
+ * - Role-based access control
+ * - Last login tracking
+ * 
+ * Routes served: /api/auth/* (defined in routes/authRoutes.js)
+ */
+
 const jwt = require('jsonwebtoken');
 const dataService = require('../services/dataService');
 
+// ==================== AUTHENTICATION ====================
+
+/**
+ * User login endpoint
+ * 
+ * Endpoint: POST /api/auth/login
+ * Required Role: None (public endpoint)
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} req.body.email - User email address
+ * @param {Object} req.body.password - User password
+ * @param {Object} res - Express response object
+ * 
+ * Response: JWT token and user information (excluding password)
+ * Used by: Frontend login form, mobile app authentication
+ * 
+ * Security notes:
+ * - Validates credentials against database
+ * - Updates lastLogin timestamp
+ * - Returns JWT token valid for 1 hour
+ * - Password stored in plain text (consider bcrypt for production)
+ * 
+ * Token contains: user ID, email, role, and display name
+ */
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   
   try {
+    // Find user by email
     const user = await dataService.getUserByEmail(email);
     if (!user || user.password !== password) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Update last login
+    // Update last login timestamp
     await dataService.updateUser(user.id, { 
       lastLogin: new Date().toISOString().split('T')[0] 
     });
 
+    // Generate JWT token with user information
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, name: `${user.firstName} ${user.lastName}` }, 
+      { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role, 
+        name: `${user.firstName} ${user.lastName}` 
+      }, 
       process.env.JWT_SECRET, 
       { expiresIn: '1h' }
     );
     
+    // Return token and safe user data (no password)
     res.json({ 
       token, 
       user: { 
@@ -38,11 +97,44 @@ exports.login = async (req, res) => {
   }
 };
 
+/**
+ * Protected route test endpoint
+ * 
+ * Endpoint: GET /api/auth/protected
+ * Required Role: Any authenticated user
+ * 
+ * @param {Object} req - Express request object (includes req.user from authMiddleware)
+ * @param {Object} res - Express response object
+ * 
+ * Response: Confirmation message with user data
+ * Used by: Testing authentication, verifying token validity
+ * 
+ * This endpoint is useful for frontend to verify if a stored token is still valid
+ */
 exports.protected = (req, res) => {
   res.json({ message: 'You accessed a protected route!', user: req.user });
 };
 
-// Dashboard endpoints for each user type
+// ==================== ROLE-SPECIFIC DASHBOARDS ====================
+
+/**
+ * Admin Dashboard - Comprehensive Platform Overview
+ * 
+ * Endpoint: GET /api/auth/dashboard/admin
+ * Required Role: Admin
+ * 
+ * @param {Object} req - Express request object (includes req.user from authMiddleware)
+ * @param {Object} res - Express response object
+ * 
+ * Response: Admin dashboard data with system-wide metrics
+ * Used by: Admin dashboard interface, system monitoring
+ * 
+ * Provides:
+ * - Overall platform statistics (users, opportunities, connections)
+ * - Recent activity summaries
+ * - Performance metrics
+ * - Pending action items
+ */
 exports.adminDashboard = async (req, res) => {
   try {
     const stats = await dataService.getDashboardStats();
@@ -89,6 +181,24 @@ exports.adminDashboard = async (req, res) => {
   }
 };
 
+/**
+ * LP Dashboard - Advisory Portal for Limited Partners
+ * 
+ * Endpoint: GET /api/auth/dashboard/lp
+ * Required Role: LP
+ * 
+ * @param {Object} req - Express request object (includes req.user from authMiddleware)
+ * @param {Object} res - Express response object
+ * 
+ * Response: LP-specific dashboard data
+ * Used by: LP dashboard interface, advisory opportunity discovery
+ * 
+ * Provides:
+ * - Current advisory commitments
+ * - Available opportunities
+ * - Impact metrics
+ * - Recommended connections based on expertise
+ */
 exports.lpDashboard = async (req, res) => {
   try {
     const user = await dataService.getUserById(req.user.id);
@@ -140,6 +250,24 @@ exports.lpDashboard = async (req, res) => {
   }
 };
 
+/**
+ * Company Dashboard - Startup Advisory Hub
+ * 
+ * Endpoint: GET /api/auth/dashboard/company
+ * Required Role: Company
+ * 
+ * @param {Object} req - Express request object (includes req.user from authMiddleware)
+ * @param {Object} res - Express response object
+ * 
+ * Response: Company-specific dashboard data
+ * Used by: Company dashboard interface, advisory request management
+ * 
+ * Provides:
+ * - Connected advisors and relationships
+ * - Posted opportunities and applications
+ * - Company progress milestones
+ * - Fundraising preparation metrics
+ */
 exports.companyDashboard = async (req, res) => {
   try {
     const user = await dataService.getUserById(req.user.id);

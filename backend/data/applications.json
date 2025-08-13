@@ -89,5 +89,18 @@
     "status": "pending",
     "createdAt": "2025-08-01T22:46:20.723Z",
     "updatedAt": "2025-08-01T22:46:20.723Z"
+  },
+  {
+    "id": 8,
+    "lpId": 2,
+    "lpName": "Robert Chen",
+    "lpEmail": "lp@example.com",
+    "opportunityId": 1,
+    "opportunityTitle": "AI/ML Strategy Advisor Needed",
+    "companyId": 5,
+    "companyName": "TechFlow AI",
+    "status": "pending",
+    "createdAt": "2025-08-13T01:08:09.438Z",
+    "updatedAt": "2025-08-13T01:08:09.438Z"
   }
 ]

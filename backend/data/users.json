@@ -8,10 +8,10 @@
     "role": "Admin",
     "status": "active",
     "joinedDate": "2024-01-15",
-    "lastLogin": "2025-08-01",
+    "lastLogin": "2025-08-13",
     "profilePicture": null,
     "createdAt": "2024-01-15T10:00:00Z",
-    "updatedAt": "2025-08-01T22:41:42.437Z"
+    "updatedAt": "2025-08-13T01:08:54.352Z"
   },
   {
     "id": 2,
@@ -22,7 +22,7 @@
     "role": "LP",
     "status": "active",
     "joinedDate": "2024-02-20",
-    "lastLogin": "2025-08-12",
+    "lastLogin": "2025-08-13",
     "profilePicture": null,
     "headline": "Senior LP with expertise in AI/ML and SaaS ventures",
     "expertiseAreas": [
@@ -34,7 +34,7 @@
     "bio": "Experienced Limited Partner with a focus on early-stage technology investments",
     "linkedinUrl": "https://linkedin.com/in/robert-chen",
     "createdAt": "2024-02-20T10:00:00Z",
-    "updatedAt": "2025-08-12T01:11:53.344Z",
+    "updatedAt": "2025-08-13T18:43:55.608Z",
     "linkedIn": "https://linkedin.com/in/robert-chen",
     "expertise": [
       "AI/ML",
@@ -51,7 +51,7 @@
     "role": "Company",
     "status": "active",
     "joinedDate": "2024-03-10",
-    "lastLogin": "2025-08-12",
+    "lastLogin": "2025-08-13",
     "profilePicture": null,
     "companyName": "InnovateTech Solutions",
     "description": "Building next-generation AI-powered business solutions for enterprises",
@@ -61,7 +61,8 @@
     "teamSize": 8,
     "website": "https://innovatetech.com",
     "createdAt": "2024-03-10T10:00:00Z",
-    "updatedAt": "2025-08-12T01:11:30.408Z"
+    "updatedAt": "2025-08-13T01:09:09.758Z",
+    "companyStage": "Seed"
   },
   {
     "id": 4,

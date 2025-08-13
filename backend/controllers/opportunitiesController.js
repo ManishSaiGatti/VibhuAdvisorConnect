@@ -1,6 +1,64 @@
+/**
+ * OpportunitiesController - Core Opportunity and Application Management
+ * 
+ * This controller handles the core functionality for advisory opportunities in the
+ * VibhuAdvisorConnect platform. It manages the complete lifecycle of opportunities
+ * from creation to application processing.
+ * 
+ * Key Responsibilities:
+ * - Opportunity CRUD operations (Create, Read, Update, Delete)
+ * - Application submission and management
+ * - View tracking and analytics
+ * - Permission-based access control
+ * - Real-time applicant count synchronization
+ * 
+ * User Access Patterns:
+ * - Companies: Create, edit, delete their own opportunities; view applications
+ * - LPs: Browse opportunities, apply to opportunities, view application status
+ * - Admins: Full access to all opportunities and applications
+ * 
+ * Routes served: /api/opportunities/* (defined in routes/opportunitiesRoutes.js)
+ * 
+ * Data Flow:
+ * 1. Companies post opportunities seeking advisory expertise
+ * 2. LPs browse and apply to relevant opportunities
+ * 3. Companies review applications and update status
+ * 4. System tracks metrics and maintains data consistency
+ */
+
 const dataService = require('../services/dataService');
 
-// Create a new opportunity
+// ==================== OPPORTUNITY CRUD OPERATIONS ====================
+
+/**
+ * Create a new advisory opportunity
+ * 
+ * Endpoint: POST /api/opportunities
+ * Required Role: Company
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} req.body - Opportunity data
+ * @param {string} req.body.title - Opportunity title
+ * @param {string} req.body.description - Detailed description
+ * @param {Array} req.body.requiredExpertise - Array of required expertise areas
+ * @param {string} req.body.timeCommitment - Expected time commitment
+ * @param {string} req.body.compensation - Compensation details
+ * @param {Object} res - Express response object
+ * 
+ * Response: Created opportunity object with assigned ID
+ * Used by: Company opportunity creation form
+ * 
+ * Features:
+ * - Validates all required fields
+ * - Associates opportunity with authenticated company
+ * - Sets initial status to 'open'
+ * - Initializes tracking fields (viewCount, applicantCount)
+ * 
+ * Validation Rules:
+ * - Title and description are required and non-empty
+ * - RequiredExpertise must be array with at least one item
+ * - TimeCommitment and compensation are required
+ */
 exports.createOpportunity = async (req, res) => {
   try {
     const { title, description, requiredExpertise, timeCommitment, compensation } = req.body;
@@ -17,7 +75,7 @@ exports.createOpportunity = async (req, res) => {
       return res.status(403).json({ message: 'Access denied. Company role required.' });
     }
 
-    // Validation
+    // Comprehensive field validation
     if (!title || !title.trim()) {
       return res.status(400).json({ message: 'Title is required' });
     }
@@ -34,7 +92,7 @@ exports.createOpportunity = async (req, res) => {
       return res.status(400).json({ message: 'Compensation details are required' });
     }
 
-    // Prepare opportunity data to match your schema
+    // Prepare opportunity data matching the expected schema
     const opportunityData = {
       title: title.trim(),
       description: description.trim(),
@@ -51,7 +109,7 @@ exports.createOpportunity = async (req, res) => {
 
     console.log('Opportunity data to be created:', opportunityData); // Debug log
 
-    // Create the opportunity
+    // Create the opportunity using DataService
     const newOpportunity = await dataService.createOpportunity(opportunityData);
 
     if (!newOpportunity) {
@@ -67,14 +125,42 @@ exports.createOpportunity = async (req, res) => {
   }
 };
 
-// Get all opportunities (with optional filtering)
+/**
+ * Get opportunities with filtering and role-based access
+ * 
+ * Endpoint: GET /api/opportunities?status=open&expertise=Marketing&search=term
+ * Required Role: Any authenticated user
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} req.query - Query parameters for filtering
+ * @param {string} req.query.status - Filter by status (open, matched, closed)
+ * @param {string} req.query.expertise - Filter by required expertise
+ * @param {string} req.query.timeCommitment - Filter by time commitment
+ * @param {string} req.query.search - Search term for title/description/company
+ * @param {Object} res - Express response object
+ * 
+ * Response: Array of opportunity objects (filtered and personalized)
+ * Used by: Opportunity browsing page, LP opportunity discovery
+ * 
+ * Features:
+ * - Multi-parameter filtering (status, expertise, time commitment, search)
+ * - Excludes company's own opportunities from their view
+ * - Real-time applicant count synchronization
+ * - For LPs: adds hasApplied flag to each opportunity
+ * - Sorts by creation date (newest first)
+ * 
+ * Access Control:
+ * - Companies don't see their own opportunities
+ * - All users see public opportunity information
+ * - LP-specific data enhancement (application status)
+ */
 exports.getOpportunities = async (req, res) => {
   try {
     const { status = 'open', expertise, timeCommitment, search, page = 1, limit = 50 } = req.query;
     
     let opportunities = await dataService.getOpportunities();
     
-    // Get current user to exclude their own opportunities
+    // Get current user to customize the response
     const user = await dataService.getUserById(req.user.id);
     
     // Exclude opportunities from the requesting company (if they are a company)
@@ -82,12 +168,12 @@ exports.getOpportunities = async (req, res) => {
       opportunities = opportunities.filter(opp => opp.companyId !== user.id);
     }
     
-    // Filter by status if provided
+    // Apply status filter
     if (status && status !== 'all') {
       opportunities = opportunities.filter(opp => opp.status === status);
     }
     
-    // Filter by expertise if provided
+    // Apply expertise filter
     if (expertise && expertise !== '' && expertise !== 'All') {
       opportunities = opportunities.filter(opp => 
         opp.requiredExpertise && opp.requiredExpertise.some(exp => 
@@ -96,14 +182,14 @@ exports.getOpportunities = async (req, res) => {
       );
     }
     
-    // Filter by time commitment if provided
+    // Apply time commitment filter
     if (timeCommitment && timeCommitment !== '' && timeCommitment !== 'All') {
       opportunities = opportunities.filter(opp => 
         opp.timeCommitment && opp.timeCommitment.toLowerCase().includes(timeCommitment.toLowerCase())
       );
     }
     
-    // Filter by search text if provided
+    // Apply search filter across multiple fields
     if (search && search !== '') {
       const searchLower = search.toLowerCase();
       opportunities = opportunities.filter(opp => 
@@ -116,7 +202,7 @@ exports.getOpportunities = async (req, res) => {
     // Sort by creation date (newest first)
     opportunities.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     
-    // Update applicant count with real-time data from applications
+    // Sync applicant counts with real-time data from applications
     for (let opportunity of opportunities) {
       const applications = await dataService.getApplicationsByOpportunity(opportunity.id);
       const actualCount = applications.length;
@@ -124,20 +210,19 @@ exports.getOpportunities = async (req, res) => {
       
       opportunity.applicantCount = actualCount;
       
-      // Also update the stored count if it's different
+      // Update stored count if different (background consistency maintenance)
       if (currentStoredCount !== actualCount) {
         await dataService.updateOpportunity(opportunity.id, { applicantCount: actualCount });
       }
     }
     
-    // For LP users, add hasApplied field
+    // For LP users, add hasApplied field to help with UI state
     if (user && user.role === 'LP') {
       for (let opp of opportunities) {
         opp.hasApplied = await dataService.hasApplied(user.id, opp.id);
       }
     }
     
-    // For the frontend, return the opportunities directly as an array
     res.json(opportunities);
   } catch (error) {
     console.error('Error fetching opportunities:', error);
@@ -145,7 +230,29 @@ exports.getOpportunities = async (req, res) => {
   }
 };
 
-// Get opportunities posted by the current company
+/**
+ * Get opportunities posted by the current company
+ * 
+ * Endpoint: GET /api/opportunities/company
+ * Required Role: Company
+ * 
+ * @param {Object} req - Express request object (includes req.user from authMiddleware)
+ * @param {Object} res - Express response object
+ * 
+ * Response: Array of opportunities posted by the authenticated company
+ * Used by: Company opportunity management page, company dashboard
+ * 
+ * Features:
+ * - Returns only opportunities owned by the authenticated company
+ * - Real-time applicant count synchronization
+ * - Sorted by creation date (newest first)
+ * - Full opportunity details for management purposes
+ * 
+ * Use Cases:
+ * - Company viewing their posted opportunities
+ * - Managing opportunity status and details
+ * - Accessing applications for each opportunity
+ */
 exports.getCompanyOpportunities = async (req, res) => {
   try {
     const user = await dataService.getUserById(req.user.id);
@@ -161,7 +268,7 @@ exports.getCompanyOpportunities = async (req, res) => {
     const opportunities = await dataService.getOpportunities();
     const companyOpportunities = opportunities.filter(opp => opp.companyId === user.id);
     
-    // Update applicant count with real-time data from applications
+    // Sync applicant count with real-time application data
     for (let opportunity of companyOpportunities) {
       const applications = await dataService.getApplicationsByOpportunity(opportunity.id);
       const actualCount = applications.length;
@@ -169,7 +276,7 @@ exports.getCompanyOpportunities = async (req, res) => {
       
       opportunity.applicantCount = actualCount;
       
-      // Also update the stored count if it's different
+      // Update stored count if different (maintain data consistency)
       if (currentStoredCount !== actualCount) {
         await dataService.updateOpportunity(opportunity.id, { applicantCount: actualCount });
       }
@@ -185,7 +292,21 @@ exports.getCompanyOpportunities = async (req, res) => {
   }
 };
 
-// Get a specific opportunity by ID
+/**
+ * Get a specific opportunity by ID
+ * 
+ * Endpoint: GET /api/opportunities/:id
+ * Required Role: Any authenticated user
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} req.params.id - Opportunity ID
+ * @param {Object} res - Express response object
+ * 
+ * Response: Single opportunity object with full details
+ * Used by: Opportunity detail view, application process
+ * 
+ * Note: View tracking is handled by separate endpoint for better control
+ */
 exports.getOpportunityById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -195,7 +316,6 @@ exports.getOpportunityById = async (req, res) => {
       return res.status(404).json({ message: 'Opportunity not found' });
     }
     
-    // Don't auto-increment view count here anymore - use dedicated endpoint
     res.json(opportunity);
   } catch (error) {
     console.error('Error fetching opportunity:', error);
@@ -203,7 +323,27 @@ exports.getOpportunityById = async (req, res) => {
   }
 };
 
-// Dedicated endpoint to track opportunity views
+// ==================== ANALYTICS & TRACKING ====================
+
+/**
+ * Track opportunity view for analytics
+ * 
+ * Endpoint: POST /api/opportunities/:id/view
+ * Required Role: Any authenticated user
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} req.params.id - Opportunity ID to track view for
+ * @param {Object} res - Express response object
+ * 
+ * Response: Confirmation with updated view count
+ * Used by: Frontend opportunity detail pages for analytics
+ * 
+ * Features:
+ * - Increments view count for opportunity
+ * - Separate from opportunity retrieval for better control
+ * - Provides analytics data for companies
+ * - Can be used to track user engagement patterns
+ */
 exports.trackOpportunityView = async (req, res) => {
   try {
     const { id } = req.params;
@@ -235,7 +375,32 @@ exports.trackOpportunityView = async (req, res) => {
   }
 };
 
-// Update an opportunity (full edit)
+// ==================== OPPORTUNITY UPDATES ====================
+
+/**
+ * Update an opportunity (full edit)
+ * 
+ * Endpoint: PUT /api/opportunities/:id
+ * Required Role: Company (owner) or Admin
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} req.params.id - Opportunity ID to update
+ * @param {Object} req.body - Updated opportunity data
+ * @param {string} req.body.title - Updated title
+ * @param {string} req.body.description - Updated description
+ * @param {Array} req.body.requiredExpertise - Updated expertise requirements
+ * @param {string} req.body.timeCommitment - Updated time commitment
+ * @param {string} req.body.compensation - Updated compensation details
+ * @param {Object} res - Express response object
+ * 
+ * Response: Updated opportunity object
+ * Used by: Company opportunity editing form
+ * 
+ * Security:
+ * - Companies can only edit their own opportunities
+ * - Admins can edit any opportunity
+ * - Full validation of required fields
+ */
 exports.updateOpportunity = async (req, res) => {
   try {
     const { id } = req.params;
@@ -258,12 +423,12 @@ exports.updateOpportunity = async (req, res) => {
       return res.status(404).json({ message: 'Opportunity not found' });
     }
     
-    // Check if user owns this opportunity
+    // Check ownership (companies can only edit their own opportunities)
     if (opportunity.companyId !== user.id && user.role !== 'Admin') {
       return res.status(403).json({ message: 'Access denied. You can only update your own opportunities.' });
     }
 
-    // Validation for required fields (same as create)
+    // Apply same validation as creation
     if (!title || !title.trim()) {
       return res.status(400).json({ message: 'Title is required' });
     }
@@ -306,7 +471,25 @@ exports.updateOpportunity = async (req, res) => {
   }
 };
 
-// Patch/update specific fields of an opportunity (mainly for status updates)
+/**
+ * Patch/update specific fields of an opportunity
+ * 
+ * Endpoint: PATCH /api/opportunities/:id
+ * Required Role: Company (owner) or Admin
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} req.params.id - Opportunity ID to update
+ * @param {Object} req.body - Fields to update (partial update)
+ * @param {Object} res - Express response object
+ * 
+ * Response: Updated opportunity object
+ * Used by: Status updates, quick field changes
+ * 
+ * Common use cases:
+ * - Changing opportunity status (open → closed)
+ * - Updating view counts
+ * - Modifying priority levels
+ */
 exports.patchOpportunity = async (req, res) => {
   try {
     const { id } = req.params;
@@ -321,7 +504,7 @@ exports.patchOpportunity = async (req, res) => {
       return res.status(404).json({ message: 'Opportunity not found' });
     }
     
-    // Check if user owns this opportunity (companies can only update their own)
+    // Check ownership (companies can only update their own opportunities)
     if (opportunity.companyId !== user.id && user.role !== 'Admin') {
       return res.status(403).json({ message: 'Access denied. You can only update your own opportunities.' });
     }
@@ -346,7 +529,24 @@ exports.patchOpportunity = async (req, res) => {
   }
 };
 
-// Delete an opportunity
+/**
+ * Delete an opportunity
+ * 
+ * Endpoint: DELETE /api/opportunities/:id
+ * Required Role: Company (owner) or Admin
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} req.params.id - Opportunity ID to delete
+ * @param {Object} res - Express response object
+ * 
+ * Response: Confirmation message
+ * Used by: Company opportunity management, admin cleanup
+ * 
+ * Security:
+ * - Companies can only delete their own opportunities
+ * - Admins can delete any opportunity
+ * - Hard delete (consider soft delete for production)
+ */
 exports.deleteOpportunity = async (req, res) => {
   try {
     const { id } = req.params;
@@ -358,7 +558,7 @@ exports.deleteOpportunity = async (req, res) => {
       return res.status(404).json({ message: 'Opportunity not found' });
     }
     
-    // Check if user owns this opportunity
+    // Check ownership (companies can only delete their own opportunities)
     if (opportunity.companyId !== user.id && user.role !== 'Admin') {
       return res.status(403).json({ message: 'Access denied. You can only delete your own opportunities.' });
     }

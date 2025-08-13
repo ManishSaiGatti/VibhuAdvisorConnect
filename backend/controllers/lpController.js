@@ -1,6 +1,27 @@
+/**
+ * LPController - Limited Partner Profile and Opportunity Management
+ * 
+ * This controller handles LP (Limited Partner) specific functionality including
+ * profile management, opportunity browsing, and application submission.
+ * 
+ * Key Features:
+ * - LP profile CRUD operations
+ * - Opportunity discovery with match scoring
+ * - Application submission and tracking
+ * - Expertise-based opportunity filtering
+ * 
+ * All endpoints require LP role authentication.
+ * Routes served: /api/lp/* (defined in routes/lpRoutes.js)
+ */
+
 const dataService = require('../services/dataService');
 
-// Get LP profile
+/**
+ * Get LP profile information
+ * 
+ * Endpoint: GET /api/lp/profile
+ * Maps user data to LP profile format for frontend consumption
+ */
 exports.getProfile = async (req, res) => {
   try {
     const user = await dataService.getUserById(req.user.id);
@@ -13,13 +34,13 @@ exports.getProfile = async (req, res) => {
       return res.status(403).json({ message: 'Access denied. LP role required.' });
     }
 
-    // Map user fields to profile structure expected by frontend
+    // Transform user data to LP profile format
     const profile = {
       id: user.id,
       userId: user.id,
       headline: user.headline || '',
       bio: user.bio || '',
-      linkedinUrl: user.linkedIn || user.linkedinUrl || '', // Handle both field names
+      linkedinUrl: user.linkedIn || user.linkedinUrl || '',
       expertiseAreas: user.expertise || user.expertiseAreas || [],
       availableHours: user.availableHours || '',
       createdAt: user.createdAt || user.joinedDate,
@@ -33,12 +54,17 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// Update LP profile
+/**
+ * Update LP profile information
+ * 
+ * Endpoint: PUT /api/lp/profile
+ * Handles profile updates with validation for LinkedIn URLs and expertise arrays
+ */
 exports.updateProfile = async (req, res) => {
   try {
     const { headline, bio, linkedinUrl, expertiseAreas, availableHours } = req.body;
     
-    console.log('Received profile update request:', req.body); // Debug log
+    console.log('Received profile update request:', req.body);
     
     const user = await dataService.getUserById(req.user.id);
     
@@ -50,43 +76,42 @@ exports.updateProfile = async (req, res) => {
       return res.status(403).json({ message: 'Access denied. LP role required.' });
     }
 
-    // Validate expertise areas if provided
+    // Validate expertise areas format
     if (expertiseAreas && !Array.isArray(expertiseAreas)) {
       return res.status(400).json({ message: 'Expertise areas must be an array' });
     }
 
-    // Validate LinkedIn URL if provided
+    // Validate LinkedIn URL format
     if (linkedinUrl && linkedinUrl.trim() && !linkedinUrl.match(/^https?:\/\/(www\.)?linkedin\.com\//)) {
       return res.status(400).json({ message: 'Invalid LinkedIn URL format' });
     }
 
-    // Prepare update data - handle all possible undefined values
+    // Prepare update data with dual field names for compatibility
     const updateData = {};
     
     if (headline !== undefined) updateData.headline = headline || '';
     if (bio !== undefined) updateData.bio = bio || '';
     if (linkedinUrl !== undefined) {
-      updateData.linkedIn = linkedinUrl || ''; // Keep the existing field name
-      updateData.linkedinUrl = linkedinUrl || ''; // Also set this for consistency
+      updateData.linkedIn = linkedinUrl || '';
+      updateData.linkedinUrl = linkedinUrl || '';
     }
     if (expertiseAreas !== undefined) {
-      updateData.expertise = expertiseAreas || []; // Keep the existing field name
-      updateData.expertiseAreas = expertiseAreas || []; // Also set this for consistency
+      updateData.expertise = expertiseAreas || [];
+      updateData.expertiseAreas = expertiseAreas || [];
     }
     if (availableHours !== undefined) updateData.availableHours = availableHours || '';
 
-    console.log('Update data to be saved:', updateData); // Debug log
+    console.log('Update data to be saved:', updateData);
 
-    // Update the user
     const updatedUser = await dataService.updateUser(req.user.id, updateData);
 
     if (!updatedUser) {
       return res.status(500).json({ message: 'Failed to update profile' });
     }
 
-    console.log('Successfully updated user:', updatedUser.id); // Debug log
+    console.log('Successfully updated user:', updatedUser.id);
 
-    // Return the updated profile in the expected format
+    // Return formatted profile data
     const updatedProfile = {
       id: updatedUser.id,
       userId: updatedUser.id,
@@ -106,7 +131,12 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-// Get LP dashboard data (can be used to supplement the auth controller)
+/**
+ * Get LP dashboard data with advisory metrics and recommendations
+ * 
+ * Endpoint: GET /api/lp/dashboard
+ * Provides comprehensive dashboard data including connections, opportunities, and impact metrics
+ */
 exports.getDashboardData = async (req, res) => {
   try {
     const user = await dataService.getUserById(req.user.id);
@@ -118,12 +148,12 @@ exports.getDashboardData = async (req, res) => {
     }
 
     const dashboardData = {
-      // LP profile
+      // LP profile metrics
       expertiseAreas: user.expertise || user.expertiseAreas || ['General Business'],
       advisoryCommitments: userConnections.filter(c => c.status === 'active').length,
       availableHours: user.availableHours || 'Not specified',
       
-      // Current advisory relationships
+      // Active advisory relationships
       activeAdvisoryRoles: userConnections
         .filter(conn => conn.status === 'active')
         .slice(0, 5)
@@ -135,7 +165,7 @@ exports.getDashboardData = async (req, res) => {
           nextMeeting: conn.nextMeeting || 'TBD'
         })),
       
-      // Opportunities
+      // Opportunity metrics
       newMatchingRequests: opportunities.filter(o => o.status === 'open').length,
       recommendedConnections: opportunities
         .filter(o => o.status === 'open')
@@ -164,7 +194,12 @@ exports.getDashboardData = async (req, res) => {
   }
 };
 
-// Get LP advisory opportunities (for browsing available opportunities)
+/**
+ * Get opportunities with LP-specific filtering and match scoring
+ * 
+ * Endpoint: GET /api/lp/opportunities
+ * Provides opportunities ranked by relevance to LP's expertise
+ */
 exports.getOpportunities = async (req, res) => {
   try {
     const user = await dataService.getUserById(req.user.id);
@@ -175,11 +210,11 @@ exports.getOpportunities = async (req, res) => {
 
     const opportunities = await dataService.getOpportunities();
     
-    // Filter to show open opportunities and add relevance scoring
+    // Filter and score opportunities based on LP expertise
     const openOpportunities = opportunities
       .filter(opp => opp.status === 'open')
       .map(opp => {
-        // Calculate match score based on expertise overlap
+        // Calculate relevance score based on expertise overlap
         const userExpertise = user.expertise || user.expertiseAreas || [];
         const requiredExpertise = opp.expertiseNeeded || [];
         
@@ -209,7 +244,12 @@ exports.getOpportunities = async (req, res) => {
   }
 };
 
-// Express interest in an opportunity
+/**
+ * Express interest in an opportunity (simplified application process)
+ * 
+ * Endpoint: POST /api/lp/opportunities/:opportunityId/interest
+ * Creates an application record and updates opportunity metrics
+ */
 exports.expressInterest = async (req, res) => {
   try {
     const { opportunityId } = req.params;
@@ -231,13 +271,12 @@ exports.expressInterest = async (req, res) => {
       return res.status(400).json({ message: 'This opportunity is no longer open' });
     }
 
-    // For now, we'll just increment the applications count
-    // In a real system, you'd create an applications table/collection
+    // Update opportunity application count
     await dataService.updateOpportunity(opportunityId, {
       applications: opportunity.applications + 1
     });
 
-    // You could also create a simple applications log
+    // Create application log entry
     const applicationsLog = {
       opportunityId: parseInt(opportunityId),
       lpId: req.user.id,

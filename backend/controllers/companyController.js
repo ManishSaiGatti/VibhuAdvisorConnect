@@ -1,6 +1,51 @@
+/**
+ * CompanyController - Company-Specific Profile and Opportunity Management
+ * 
+ * This controller handles company-specific functionality in the VibhuAdvisorConnect
+ * platform. It provides endpoints for companies to manage their profiles and
+ * view their posted opportunities.
+ * 
+ * Key Responsibilities:
+ * - Company profile management (view and update)
+ * - Company opportunity retrieval and management
+ * - Data transformation between user records and company profile format
+ * 
+ * All endpoints require Company role authentication via middleware.
+ * Companies can only access and modify their own data.
+ * 
+ * Routes served: /api/company/* (defined in routes/companyRoutes.js)
+ * 
+ * Data Model Note:
+ * Company information is stored in the users table with role='Company'
+ * This controller transforms user data into company profile format for frontend
+ */
+
 const dataService = require('../services/dataService');
 
-// Get Company profile
+// ==================== PROFILE MANAGEMENT ====================
+
+/**
+ * Get company profile information
+ * 
+ * Endpoint: GET /api/company/profile
+ * Required Role: Company
+ * 
+ * @param {Object} req - Express request object (includes req.user from authMiddleware)
+ * @param {Object} res - Express response object
+ * 
+ * Response: Company profile object with company-specific fields
+ * Used by: Company profile page, profile editing form pre-population
+ * 
+ * Data Transformation:
+ * - Maps user fields to company profile structure
+ * - Handles field name variations (stage vs companyStage)
+ * - Provides fallback values for missing fields
+ * - Excludes sensitive information (passwords, internal IDs)
+ * 
+ * Security:
+ * - Verifies user exists and has Company role
+ * - Only returns data for the authenticated company
+ */
 exports.getProfile = async (req, res) => {
   try {
     const user = await dataService.getUserById(req.user.id);
@@ -33,7 +78,35 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// Update Company profile
+/**
+ * Update company profile information
+ * 
+ * Endpoint: PUT /api/company/profile
+ * Required Role: Company
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} req.body - Updated profile data
+ * @param {string} req.body.companyName - Company name
+ * @param {string} req.body.website - Company website URL
+ * @param {string} req.body.description - Company description
+ * @param {string} req.body.stage - Company stage (Seed, Series A, etc.)
+ * @param {string} req.body.industry - Company industry
+ * @param {Object} res - Express response object
+ * 
+ * Response: Updated company profile object
+ * Used by: Company profile editing form submission
+ * 
+ * Features:
+ * - Validates website URL format if provided
+ * - Handles undefined/null values gracefully
+ * - Updates both current and legacy field names for compatibility
+ * - Returns transformed profile data for frontend consumption
+ * 
+ * Validation:
+ * - Website must start with http:// or https://
+ * - All fields are optional (can be empty strings)
+ * - Verifies user has Company role
+ */
 exports.updateProfile = async (req, res) => {
   try {
     const { companyName, website, description, stage, industry } = req.body;
@@ -69,7 +142,7 @@ exports.updateProfile = async (req, res) => {
 
     console.log('Company update data to be saved:', updateData); // Debug log
 
-    // Update the user
+    // Update the user record using DataService
     const updatedUser = await dataService.updateUser(req.user.id, updateData);
 
     if (!updatedUser) {
@@ -98,7 +171,31 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-// Get opportunities posted by the current company
+// ==================== OPPORTUNITY MANAGEMENT ====================
+
+/**
+ * Get opportunities posted by the current company
+ * 
+ * Endpoint: GET /api/company/opportunities
+ * Required Role: Company
+ * 
+ * @param {Object} req - Express request object (includes req.user from authMiddleware)
+ * @param {Object} res - Express response object
+ * 
+ * Response: Array of opportunity objects posted by this company
+ * Used by: Company opportunity management page, dashboard
+ * 
+ * Features:
+ * - Filters opportunities by company ID (only shows company's own opportunities)
+ * - Sorts by creation date (newest first)
+ * - Includes all opportunity details and status information
+ * - Provides basis for opportunity management (edit, delete, view applications)
+ * 
+ * Security:
+ * - Verifies user has Company role
+ * - Only returns opportunities owned by the authenticated company
+ * - No access to other companies' opportunities
+ */
 exports.getOpportunities = async (req, res) => {
   try {
     const user = await dataService.getUserById(req.user.id);
@@ -111,6 +208,7 @@ exports.getOpportunities = async (req, res) => {
       return res.status(403).json({ message: 'Access denied. Company role required.' });
     }
 
+    // Get all opportunities and filter by company ID
     const opportunities = await dataService.getOpportunities();
     const companyOpportunities = opportunities.filter(opp => opp.companyId === user.id);
     
