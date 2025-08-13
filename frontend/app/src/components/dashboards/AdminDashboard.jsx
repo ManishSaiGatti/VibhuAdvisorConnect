@@ -1,38 +1,110 @@
+/**
+ * @fileoverview Admin Dashboard component for platform administration.
+ * 
+ * This component provides a comprehensive administrative interface for platform
+ * management in the Vibhu Advisor Connect system. It offers tools for user
+ * management, opportunity oversight, system analytics, and platform administration.
+ * 
+ * Features:
+ * - User management (view, filter, manage all platform users)
+ * - Opportunity oversight (monitor and manage posted opportunities)
+ * - System analytics and dashboard metrics
+ * - Tabbed interface for organized navigation
+ * - Real-time data filtering and search
+ * - Administrative actions and controls
+ * 
+ * Access Control:
+ * - Restricted to users with 'Admin' role
+ * - Requires valid authentication token
+ * - Protected API endpoints for sensitive operations
+ * 
+ * @component
+ * @param {Object} props - Component props
+ * @param {Function} props.onLogout - Callback function for user logout
+ * 
+ * @example
+ * ```jsx
+ * <AdminDashboard onLogout={() => handleLogout()} />
+ * ```
+ * 
+ * @author Vibhu Advisor Connect Team
+ * @version 1.0.0
+ */
+
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { getToken } from '../../utils';
 import '../../styles/dashboards/AdminDashboard.css';
 
+/**
+ * Admin dashboard component with comprehensive platform management tools.
+ * 
+ * This component provides a multi-tabbed interface for platform administration,
+ * including user management, opportunity oversight, and system analytics.
+ * It fetches and manages data from multiple API endpoints to provide a
+ * complete administrative view.
+ * 
+ * State Management:
+ * - data: Main dashboard overview data and metrics
+ * - users: Complete list of platform users with filtering
+ * - opportunities: All opportunities posted on the platform
+ * - activeTab: Current active tab in the interface
+ * - Filter states: Various filters for data views
+ * 
+ * @param {Object} props - Component properties
+ * @param {Function} props.onLogout - Handler for user logout action
+ * @returns {JSX.Element} Rendered admin dashboard component
+ */
 function AdminDashboard({ onLogout }) {
+  // Main component state
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Tab navigation state
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // Data management state
   const [users, setUsers] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
+  
+  // Filter state for users
   const [userFilter, setUserFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  
+  // Filter state for opportunities
   const [opportunityFilter, setOpportunityFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
+  /**
+   * Admin data fetching effect.
+   * 
+   * Fetches comprehensive administrative data on component mount:
+   * 1. Dashboard overview data (metrics, analytics)
+   * 2. Complete user list for management
+   * 3. All opportunities for oversight
+   * 
+   * All requests use authentication tokens for security.
+   * Handles errors gracefully and updates loading states.
+   */
   useEffect(() => {
     const fetchAdminData = async () => {
       try {
         const token = getToken();
         
-        // Fetch dashboard overview data
+        // Fetch dashboard overview data with platform metrics
         const dashboardResponse = await axios.get('http://localhost:3000/api/auth/dashboard/admin', {
           headers: { Authorization: `Bearer ${token}` }
         });
         setData(dashboardResponse.data);
         
-        // Fetch users data
+        // Fetch complete user list for user management
         const usersResponse = await axios.get('http://localhost:3000/api/admin/users', {
           headers: { Authorization: `Bearer ${token}` }
         });
         setUsers(usersResponse.data);
         
-        // Fetch opportunities data
+        // Fetch all opportunities for administrative oversight
         const opportunitiesResponse = await axios.get('http://localhost:3000/api/admin/opportunities', {
           headers: { Authorization: `Bearer ${token}` }
         });

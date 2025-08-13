@@ -1,9 +1,81 @@
+/**
+ * @fileoverview Opportunity posting and editing component.
+ * 
+ * This component provides a comprehensive form interface for creating new
+ * advisory opportunities or editing existing ones. It's exclusively available
+ * to Company role users and includes form validation, data management,
+ * and API integration for opportunity management.
+ * 
+ * Features:
+ * - Create new advisory opportunities
+ * - Edit existing opportunities with pre-populated data
+ * - Multi-select expertise areas with predefined options
+ * - Time commitment selection from standardized options
+ * - Form validation and error handling
+ * - Success feedback and navigation
+ * - Responsive design for various screen sizes
+ * 
+ * Form Fields:
+ * - Title: Brief, descriptive opportunity title
+ * - Description: Detailed opportunity description and requirements
+ * - Required Expertise: Multi-select from predefined expertise areas
+ * - Time Commitment: Expected advisor time investment
+ * - Compensation: Details about advisor compensation
+ * 
+ * @component
+ * @param {Object} props - Component props
+ * @param {Function} props.onBack - Callback to return to previous view
+ * @param {Function} props.onSuccess - Callback called on successful operation
+ * @param {Object|null} props.editingOpportunity - Opportunity data for editing (null for new)
+ * 
+ * @example
+ * ```jsx
+ * // Create new opportunity
+ * <PostOpportunity 
+ *   onBack={() => setView('dashboard')}
+ *   onSuccess={() => setView('dashboard')}
+ *   editingOpportunity={null}
+ * />
+ * 
+ * // Edit existing opportunity
+ * <PostOpportunity 
+ *   onBack={() => setView('dashboard')}
+ *   onSuccess={() => setView('dashboard')}
+ *   editingOpportunity={opportunityData}
+ * />
+ * ```
+ * 
+ * @author Vibhu Advisor Connect Team
+ * @version 1.0.0
+ */
+
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { getToken } from '../../utils';
 import '../../styles/opportunities/PostOpportunity.css';
 
+/**
+ * Opportunity form component for creating and editing advisory opportunities.
+ * 
+ * This component provides a full-featured form interface for opportunity management.
+ * It supports both create and edit modes, with intelligent form state management
+ * and comprehensive validation.
+ * 
+ * Component Behavior:
+ * - Create Mode: Clean form for new opportunity creation
+ * - Edit Mode: Pre-populated form with existing opportunity data
+ * - Validation: Required fields and format validation
+ * - API Integration: Handles create/update operations
+ * - User Feedback: Loading states, error messages, success notifications
+ * 
+ * @param {Object} props - Component properties
+ * @param {Function} props.onBack - Navigation callback to return to dashboard
+ * @param {Function} props.onSuccess - Success callback after create/update
+ * @param {Object|null} props.editingOpportunity - Opportunity data for editing
+ * @returns {JSX.Element} Rendered opportunity form component
+ */
 function PostOpportunity({ onBack, onSuccess, editingOpportunity }) {
+  // Form state management
   const [opportunity, setOpportunity] = useState({
     title: '',
     description: '',
@@ -11,12 +83,15 @@ function PostOpportunity({ onBack, onSuccess, editingOpportunity }) {
     timeCommitment: '',
     compensation: ''
   });
+  
+  // UI state management
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [expertiseInput, setExpertiseInput] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
   
+  // Configuration data for form options
   const [availableExpertise] = useState([
     'Fintech', 'Healthcare', 'AI/ML', 'Blockchain', 'SaaS', 'E-commerce', 
     'Cybersecurity', 'EdTech', 'PropTech', 'CleanTech', 'Biotech', 'Gaming',
@@ -34,6 +109,13 @@ function PostOpportunity({ onBack, onSuccess, editingOpportunity }) {
     'As needed'
   ]);
 
+  /**
+   * Form initialization effect for edit mode.
+   * 
+   * Populates form fields when editing an existing opportunity.
+   * Determines whether component is in create or edit mode and
+   * initializes form state accordingly.
+   */
   // Effect to populate form when editing
   useEffect(() => {
     if (editingOpportunity) {
