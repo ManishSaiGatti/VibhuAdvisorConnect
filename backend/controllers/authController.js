@@ -26,7 +26,11 @@
  */
 
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
 const dataService = require('../services/dataService');
+
+// Initialize Google OAuth client
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // ==================== AUTHENTICATION ====================
 
@@ -94,6 +98,160 @@ exports.login = async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error during login' });
+  }
+};
+
+/**
+ * Google OAuth Login endpoint
+ * 
+ * Endpoint: POST /api/auth/google/login
+ * Required Role: None (public endpoint)
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} req.body.credential - Google ID token from frontend
+ * @param {Object} res - Express response object
+ * 
+ * Response: JWT token and user information or setup flag for new users
+ */
+exports.googleLogin = async (req, res) => {
+  const { credential } = req.body;
+  
+  try {
+    // Verify Google ID token
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+    
+    const payload = ticket.getPayload();
+    const { email, given_name, family_name, picture, sub: googleId } = payload;
+
+    // Check if user exists
+    let user = await dataService.getUserByEmail(email);
+    
+    if (user) {
+      // Existing user - generate JWT and login
+      await dataService.updateUser(user.id, { 
+        lastLogin: new Date().toISOString().split('T')[0] 
+      });
+
+      const token = jwt.sign(
+        { 
+          id: user.id, 
+          email: user.email, 
+          role: user.role, 
+          name: `${user.firstName} ${user.lastName}` 
+        }, 
+        process.env.JWT_SECRET, 
+        { expiresIn: '1h' }
+      );
+      
+      res.json({ 
+        token, 
+        user: { 
+          id: user.id,
+          email: user.email, 
+          role: user.role, 
+          name: `${user.firstName} ${user.lastName}`,
+          firstName: user.firstName,
+          lastName: user.lastName
+        },
+        isNewUser: false
+      });
+    } else {
+      // New user - return Google user data for setup
+      res.json({
+        googleUser: {
+          email,
+          given_name,
+          family_name,
+          picture,
+          googleId
+        },
+        isNewUser: true
+      });
+    }
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(500).json({ message: 'Google authentication failed' });
+  }
+};
+
+/**
+ * Google OAuth Account Setup endpoint
+ * 
+ * Endpoint: POST /api/auth/google/setup
+ * Required Role: None (public endpoint)
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} req.body.googleUser - Google user data
+ * @param {Object} req.body.accountType - 'LP' or 'Company'
+ * @param {Object} req.body.profileData - User profile information
+ * @param {Object} res - Express response object
+ * 
+ * Response: JWT token and complete user data
+ */
+exports.googleSetup = async (req, res) => {
+  const { googleUser, accountType, profileData } = req.body;
+  
+  try {
+    // Create base user object
+    const newUser = {
+      email: googleUser.email,
+      role: accountType,
+      firstName: profileData.firstName || googleUser.given_name,
+      lastName: profileData.lastName || googleUser.family_name,
+      profilePicture: googleUser.picture || '',
+      googleId: googleUser.googleId,
+      password: '', // No password for Google OAuth users
+      lastLogin: new Date().toISOString().split('T')[0],
+      isGoogleUser: true,
+      setupComplete: true
+    };
+
+    // Add role-specific fields
+    if (accountType === 'LP') {
+      newUser.headline = profileData.headline || '';
+      newUser.bio = profileData.bio || '';
+      newUser.linkedinUrl = profileData.linkedinUrl || '';
+      newUser.expertiseAreas = profileData.expertiseAreas || [];
+      newUser.availableHours = profileData.availableHours || '';
+    } else if (accountType === 'Company') {
+      newUser.companyName = profileData.companyName || '';
+      newUser.website = profileData.website || '';
+      newUser.description = profileData.description || '';
+      newUser.stage = profileData.stage || '';
+      newUser.industry = profileData.industry || '';
+    }
+
+    const createdUser = await dataService.createUser(newUser);
+    
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        id: createdUser.id, 
+        email: createdUser.email, 
+        role: createdUser.role, 
+        name: `${createdUser.firstName} ${createdUser.lastName}` 
+      }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '1h' }
+    );
+    
+    res.json({ 
+      token, 
+      user: { 
+        id: createdUser.id,
+        email: createdUser.email, 
+        role: createdUser.role, 
+        name: `${createdUser.firstName} ${createdUser.lastName}`,
+        firstName: createdUser.firstName,
+        lastName: createdUser.lastName
+      }
+    });
+  } catch (error) {
+    console.error('Google setup error:', error);
+    res.status(500).json({ message: 'Account setup failed' });
   }
 };
 

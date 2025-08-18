@@ -24,6 +24,8 @@
 const express = require('express');
 const { 
   login, 
+  googleLogin,
+  googleSetup,
   protected, 
   adminDashboard, 
   lpDashboard, 
@@ -46,6 +48,28 @@ const router = express.Router();
  * Validates credentials and returns JWT token for authenticated sessions
  */
 router.post('/login', login);
+
+/**
+ * Google OAuth login endpoint
+ * POST /api/auth/google/login
+ * 
+ * Body: { credential: string }
+ * Response: { token: string, user: object } or { googleUser: object, isNewUser: true }
+ * 
+ * Verifies Google ID token and either logs in existing user or flags for setup
+ */
+router.post('/google/login', googleLogin);
+
+/**
+ * Google OAuth account setup endpoint
+ * POST /api/auth/google/setup
+ * 
+ * Body: { googleUser: object, accountType: string, profileData: object }
+ * Response: { token: string, user: object }
+ * 
+ * Creates new user account from Google OAuth data and profile setup
+ */
+router.post('/google/setup', googleSetup);
 
 // ==================== PROTECTED ROUTES ====================
 

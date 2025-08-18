@@ -33,7 +33,9 @@
 
 import { useState } from 'react';
 import axios from 'axios';
+import { GoogleLogin } from '@react-oauth/google';
 import { setAuthData } from '../../utils';
+import { GOOGLE_AUTH_CONFIG } from '../../config/googleAuth';
 import '../../styles/components/LoginComponent.css';
 
 /**
@@ -58,44 +60,43 @@ import '../../styles/components/LoginComponent.css';
  */
 function Login({ onLogin, onBack }) {
   // Form state management
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   /**
-   * Handles form submission and authentication process.
-   * 
-   * Manages the complete login flow including:
-   * - Form validation
-   * - API authentication request
-   * - Session data storage
-   * - Success/error handling
-   * - Loading state management
-   * 
-   * @param {Event} e - Form submission event
+   * Handle successful Google OAuth login
    */
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleGoogleSuccess = async (credentialResponse) => {
     setError('');
     setLoading(true);
     
     try {
-      // Send authentication request to backend API
-      const res = await axios.post('http://localhost:3000/api/auth/login', { email, password });
+      // Send Google credential to backend for verification
+      const response = await axios.post('http://localhost:3000/api/auth/google/login', {
+        credential: credentialResponse.credential
+      });
       
-      // Store authentication data in session storage
-      setAuthData(res.data.token, res.data.user);
-      
-      // Notify parent component of successful login
-      onLogin(res.data.user); // Pass user data to parent
+      if (response.data.isNewUser) {
+        // New user needs to complete setup
+        onLogin(response.data.googleUser, true); // Pass true to indicate setup needed
+      } else {
+        // Existing user, store auth data and proceed
+        setAuthData(response.data.token, response.data.user);
+        onLogin(response.data.user, false); // Pass false to indicate no setup needed
+      }
     } catch (err) {
-      // Display user-friendly error message
-      setError('Login failed. Please check your credentials and try again.');
+      console.error('Google login error:', err);
+      setError('Google sign-in failed. Please try again.');
     } finally {
-      // Reset loading state regardless of outcome
       setLoading(false);
     }
+  };
+
+  /**
+   * Handle Google OAuth login failure
+   */
+  const handleGoogleError = () => {
+    setError('Google sign-in was cancelled or failed. Please try again.');
   };
 
   /**
@@ -143,59 +144,50 @@ function Login({ onLogin, onBack }) {
             </div>
           )}
 
-          {/* Demo credentials information for testing */}
-          <div className="demo-info">
-            <p className="demo-title">Demo Access:</p>
-            <p className="demo-text">
-              <strong>Admin:</strong> admin@example.com / admin123<br/>
-              <strong>LP:</strong> lp@example.com / lp123<br/>
-              <strong>Company:</strong> company@example.com / company123
+          {/* Google Sign-In Section */}
+          <div className="google-signin-container">
+            <div className="signin-header">
+              <h3>Sign in with Google</h3>
+              <p>Use your Google account to access the platform</p>
+            </div>
+            
+            <div className="google-signin-wrapper">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                useOneTap={false}
+                theme="outline"
+                size="large"
+                text="signin_with"
+                shape="rectangular"
+                locale="en"
+                disabled={loading}
+              />
+            </div>
+
+            {loading && (
+              <div className="loading-message">
+                <span className="loading-spinner"></span>
+                Signing you in...
+              </div>
+            )}
+          </div>
+
+          {/* Information section */}
+          <div className="platform-info">
+            <h4>Platform Access</h4>
+            <p>
+              <strong>Limited Partners:</strong> Provide advisory services to portfolio companies<br/>
+              <strong>Companies:</strong> Seek advisory services for your startup
+            </p>
+            <p className="note">
+              New users will be prompted to set up their account after signing in.
             </p>
           </div>
 
-          {/* Main authentication form */}
-          <form onSubmit={handleSubmit} className="login-form">
-            {/* Email input field */}
-            <div className="form-group">
-              <label className="form-label" htmlFor="email">Email Address</label>
-              <input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="form-input"
-                required
-              />
-            </div>
-
-            {/* Password input field */}
-            <div className="form-group">
-              <label className="form-label" htmlFor="password">Password</label>
-              <input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="form-input"
-                required
-              />
-            </div>
-
-            {/* Submit button with loading state */}
-            <button
-              type="submit"
-              className={`submit-button ${loading ? 'loading' : ''}`}
-              disabled={loading}
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
-
           {/* Footer information */}
           <p className="login-footer-text">
-            This is an invite-only platform. Contact support if you need access.
+            This platform connects Limited Partners with startups for advisory relationships.
           </p>
         </div>
       </div>

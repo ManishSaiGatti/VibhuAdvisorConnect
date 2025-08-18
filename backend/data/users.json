@@ -152,5 +152,51 @@
     "website": "https://datasync.pro",
     "createdAt": "2024-04-01T10:00:00Z",
     "updatedAt": "2024-04-01T10:00:00Z"
+  },
+  {
+    "id": 8,
+    "email": "manishsai@vibhu.vc",
+    "role": "LP",
+    "firstName": "Manish",
+    "lastName": "Gatti",
+    "profilePicture": "https://lh3.googleusercontent.com/a/ACg8ocJhq95Ct5Mwiksd_JJIIRAJJltaoEkTL1pzMYR3MJ98QTZk5g=s96-c",
+    "googleId": "101187103264706532879",
+    "password": "",
+    "lastLogin": "2025-08-18",
+    "isGoogleUser": true,
+    "setupComplete": true,
+    "headline": "Example LP User",
+    "bio": "Example LP Bio",
+    "linkedinUrl": "https://linkedin.com/in/example",
+    "expertiseAreas": [
+      "AI/ML",
+      "Cybersecurity",
+      "Healthcare"
+    ],
+    "availableHours": "10-15 hours",
+    "joinedDate": "2025-08-18",
+    "createdAt": "2025-08-18T19:40:26.768Z",
+    "updatedAt": "2025-08-18T19:40:26.768Z"
+  },
+  {
+    "id": 9,
+    "email": "gmanishsai@gmail.com",
+    "role": "Company",
+    "firstName": "Manish Sai",
+    "lastName": "Gatti",
+    "profilePicture": "https://lh3.googleusercontent.com/a/ACg8ocKXvLdkzVQWJHPLHuKjZt-e_NBSqK_WDtW_WeZpUl7C5AojEOI=s96-c",
+    "googleId": "101809734176659996110",
+    "password": "",
+    "lastLogin": "2025-08-18",
+    "isGoogleUser": true,
+    "setupComplete": true,
+    "companyName": "ExampleCompany",
+    "website": "https://example.com",
+    "description": "Example",
+    "stage": "Pre-Seed",
+    "industry": "AI/ML",
+    "joinedDate": "2025-08-18",
+    "createdAt": "2025-08-18T19:43:12.813Z",
+    "updatedAt": "2025-08-18T19:43:12.813Z"
   }
 ]

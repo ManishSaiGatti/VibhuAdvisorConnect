@@ -15,6 +15,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { 
   LandingPage, 
   LoginComponent, 
@@ -23,7 +24,10 @@ import {
   AdminDashboard,
   PostOpportunity 
 } from './components';
+import AccountSetup from './components/auth/AccountSetup';
+import GoogleCallback from './components/auth/GoogleCallback';
 import { getToken, getUserData, clearAuthData } from './utils';
+import { GOOGLE_AUTH_CONFIG } from './config/googleAuth';
 import './styles/App.css';
 
 /**
@@ -49,6 +53,8 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [editingOpportunity, setEditingOpportunity] = useState(null);
+  const [googleUser, setGoogleUser] = useState(null); // For account setup
+  const [needsSetup, setNeedsSetup] = useState(false); // For first-time users
 
   /**
    * Authentication check and session restoration effect.
@@ -91,17 +97,57 @@ function App() {
    * Updates application state with user data and redirects to dashboard.
    * 
    * @param {Object} userData - Complete user object from authentication response
-   * @param {string} userData.role - User role (Admin, LP, Company)
-   * @param {string} userData.email - User email address
-   * @param {string} userData.id - Unique user identifier
+   * @param {boolean} requiresSetup - Whether user needs to complete account setup
    * 
    * Usage: Pass as onLogin prop to LoginComponent
    */
-  const handleLoginSuccess = (userData) => {
+  const handleLoginSuccess = (userData, requiresSetup = false) => {
+    if (requiresSetup) {
+      // New user needs account setup
+      setGoogleUser(userData);
+      setNeedsSetup(true);
+      setCurrentView('accountSetup');
+    } else {
+      // Existing user, proceed to dashboard
+      setUser(userData);
+      setIsAuthenticated(true);
+      setCurrentView('dashboard');
+    }
+  };
+
+  /**
+   * Account setup completion handler.
+   * 
+   * Called when new user completes their account setup.
+   * 
+   * @param {Object} userData - Complete user object after setup
+   */
+  const handleSetupComplete = (userData) => {
     setUser(userData);
     setIsAuthenticated(true);
+    setNeedsSetup(false);
+    setGoogleUser(null);
     setCurrentView('dashboard');
   };
+
+  /**
+   * Handle returning from account setup to login
+   */
+  const handleBackFromSetup = () => {
+    setNeedsSetup(false);
+    setGoogleUser(null);
+    setCurrentView('login');
+  };
+
+  /**
+   * Check if current URL is Google OAuth callback
+   */
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('code') && window.location.pathname === '/auth/google/callback') {
+      setCurrentView('googleCallback');
+    }
+  }, []);
 
   /**
    * Navigation handler: Return to landing page.
@@ -237,24 +283,54 @@ function App() {
    * Conditional rendering logic based on application state.
    * 
    * The application renders different components based on:
-   * 1. Current view state (login, postOpportunity, dashboard, landing)
+   * 1. Current view state (login, postOpportunity, dashboard, landing, accountSetup, googleCallback)
    * 2. User authentication status
    * 3. User role permissions
    * 
    * Rendering priority:
-   * 1. Login form (when currentView === 'login')
-   * 2. Opportunity posting (when authenticated Company user in postOpportunity view)
-   * 3. Role-based dashboard (when authenticated user in dashboard view)
-   * 4. Landing page (default fallback)
+   * 1. Google OAuth callback handler
+   * 2. Account setup for new users
+   * 3. Login form (when currentView === 'login')
+   * 4. Opportunity posting (when authenticated Company user in postOpportunity view)
+   * 5. Role-based dashboard (when authenticated user in dashboard view)
+   * 6. Landing page (default fallback)
    */
+
+  // Handle Google OAuth callback
+  if (currentView === 'googleCallback') {
+    return (
+      <GoogleOAuthProvider clientId={GOOGLE_AUTH_CONFIG.clientId}>
+        <GoogleCallback 
+          onAuthSuccess={handleLoginSuccess}
+          onAuthError={(error) => {
+            console.error('Google auth error:', error);
+            setCurrentView('login');
+          }}
+        />
+      </GoogleOAuthProvider>
+    );
+  }
+
+  // Render account setup for new users
+  if (currentView === 'accountSetup' && needsSetup && googleUser) {
+    return (
+      <AccountSetup
+        googleUser={googleUser}
+        onSetupComplete={handleSetupComplete}
+        onBack={handleBackFromSetup}
+      />
+    );
+  }
 
   // Render login component
   if (currentView === 'login') {
     return (
-      <LoginComponent 
-        onLogin={handleLoginSuccess}
-        onBack={handleBackToLanding}
-      />
+      <GoogleOAuthProvider clientId={GOOGLE_AUTH_CONFIG.clientId}>
+        <LoginComponent 
+          onLogin={handleLoginSuccess}
+          onBack={handleBackToLanding}
+        />
+      </GoogleOAuthProvider>
     );
   }
 
@@ -275,7 +351,11 @@ function App() {
   }
 
   // Default: render landing page
-  return <LandingPage onLoginClick={handleLoginClick} />;
+  return (
+    <GoogleOAuthProvider clientId={GOOGLE_AUTH_CONFIG.clientId}>
+      <LandingPage onLoginClick={handleLoginClick} />
+    </GoogleOAuthProvider>
+  );
 }
 
 export default App;
